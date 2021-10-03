@@ -31,11 +31,23 @@ class dataVOC(data.Dataset):#D:\YOLO\redo\VOCdevkit\VOC2012
         for ob in root.findall('object'):
             label = ob.find('name').text
             bndbox = ob.find('bndbox')
-            xmin =  (int(bndbox.find('xmin').text) - 1) / height;
-            ymin =  (int(bndbox.find('ymin').text) - 1) / width;
-            xmax =  (int(bndbox.find('xmax').text) - 1) / height;
-            ymax =  (int(bndbox.find('ymax').text) - 1) / width;#将boundingbox边框归一化
-            target.append([xmin,ymin,xmax,ymax,self.classtoindex[label]])
+            xmin =  (int(bndbox.find('xmin').text) - 1);
+            ymin =  (int(bndbox.find('ymin').text) - 1);
+            xmax =  (int(bndbox.find('xmax').text) - 1);
+            ymax =  (int(bndbox.find('ymax').text) - 1);#将boundingbox边框归一化
+            x = (xmin + xmax) / 2.0;
+            y = (ymin + ymax) / 2.0;
+            w = (xmax - xmin)
+            h = ymax - ymin;
+            x /= 1.0 * height
+            y /= 1.0 * width
+            # x = 1.0 * x / 7.0 - int(x / 7.0)
+            # y = 1.0 * y / 7.0 - int(y / 7.0)
+            w /= 1.0 * height
+            h /= 1.0 * width
+
+        # target.append([xmin,ymin,xmax,ymax,self.classtoindex[label]])
+            target.append([x, y, w, h, self.classtoindex[label]])
         return target;
 
 
@@ -71,21 +83,38 @@ if __name__ == '__main__':
     img_origin = vocdata.get_img(imgid);
     _,target = vocdata.get_annotation(imgid);
     for ob in target:
-        xmin, ymin, xmax, ymax, label = ob;
-        img_origin = cv2.rectangle(img_origin,(int(xmin),int(ymin)),(int(xmax),int(ymax)),(0,0,255),2)
-        img_origin = cv2.putText(img_origin, voc_class[label], (int(xmin), int(ymin)+ 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+        x, y, w, h, label = ob;
+        img_origin = cv2.rectangle(img_origin, (int(x - w * 0.5), int(y - h * 0.5)),
+                                   (int(x + w * 0.5), int(y + h * 0.5)), (0, 0, 255), 2)
+        img_origin = cv2.putText(img_origin, voc_class[label], (int(x - w * 0.5), int(y - h * 0.5) + 15), cv2.FONT_HERSHEY_SIMPLEX,
+                                 0.5, (0, 0, 0), 2)
+
+
+        # xmin, ymin, xmax, ymax, label = ob;
+        # img_origin = cv2.rectangle(img_origin,(int(xmin),int(ymin)),(int(xmax),int(ymax)),(0,0,255),2)
+        # img_origin = cv2.putText(img_origin, voc_class[label], (int(xmin), int(ymin)+ 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
     cv2.imshow('original image',img_origin)
     img_trans,target = vocdata.get_item(imgid)
     img_trans *= 255
     img_trans = np.array(img_trans.clone()).astype(np.uint8);
 
     for ob in target:
-        xmin, ymin, xmax, ymax, label = ob;
-        xmin, ymin, xmax, ymax = xmin * size, ymin * size, xmax * size, ymax * size
+        x, y, w, h, label = ob;
+        x,y,w, h, =  x * size,y * size,w * size, h * size
+
         img_trans = img_trans.copy()
-        img_trans = cv2.rectangle(img_trans.astype(np.uint8), (int(xmin), int(ymin)), (int(xmax), int(ymax)), (0, 0, 255), 2)
-        img_trans = cv2.putText(img_trans, voc_class[int(label)], (int(xmin), int(ymin) + 15), cv2.FONT_HERSHEY_SIMPLEX,
+        img_trans = cv2.rectangle(img_trans, (np.int(x - w * 0.5), np.int(y - h * 0.5)),
+                                   (np.int(x + w * 0.5), np.int(y + h * 0.5)), (0, 0, 255), 2)
+        img_trans = cv2.putText(img_trans, voc_class[int(label)], (np.int(x - w * 0.5), np.int(y - h * 0.5 + 15)),
+                                 cv2.FONT_HERSHEY_SIMPLEX,
                                  0.5, (0, 0, 0), 2)
+
+        # xmin, ymin, xmax, ymax, label = ob;
+        # xmin, ymin, xmax, ymax = xmin * size, ymin * size, xmax * size, ymax * size
+        # img_trans = img_trans.copy()
+        # img_trans = cv2.rectangle(img_trans.astype(np.uint8), (int(xmin), int(ymin)), (int(xmax), int(ymax)), (0, 0, 255), 2)
+        # img_trans = cv2.putText(img_trans, voc_class[int(label)], (int(xmin), int(ymin) + 15), cv2.FONT_HERSHEY_SIMPLEX,
+        #                          0.5, (0, 0, 0), 2)
     img_trans = numpy.array(img_trans).astype(np.uint8)
 
     cv2.imshow('transform image', img_trans)
